@@ -1,10 +1,11 @@
 
 services:
   backend:
+    container_name: backend
     build:
       context: ./backend
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     env_file:
       - .env
     depends_on:
@@ -13,13 +14,13 @@ services:
   nginx:
     image: nginx:latest # FIXME: краще використовувати певну версію
     ports:
-      # - "80:80" # http
+      - "80:80" # http
       # - "443:443" # https
-      - "8080:80"
     depends_on:
       - backend
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro # read only
+      - ./frontend:/usr/share/nginx/html:ro
     restart: always
   
   postgres:
