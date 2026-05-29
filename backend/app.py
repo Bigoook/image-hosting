@@ -1,103 +1,137 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import json
+import os
+import cgi
+import uuid
+from http.server import HTTPServer
 
-from utils.encoders import AppJSONEncoder
 from logger import logger
 from database import ImageRepository
+from config import settings
+from handlers import BaseHandler
+from utils import (
+    get_query_params, 
+    validate_size, 
+    validate_extension, 
+    save_image,
+    image_exists,
+    delete_image
+)
 
 
-
-class ImageAPIServer(BaseHTTPRequestHandler):
+class ImageAPIServer(BaseHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
         self.repo = ImageRepository()
-        self.add_images()
-        
-    def add_images(self):
-        if self.repo.list():
-            logger.info("Images already exist in the database, skipping seeding")
-            return  
-        
-        images = [
-            {
-                "filename": "image1.jpg",
-                "original_name": "photo1.jpg",
-                "size": 1024,
-                "file_type": "image/jpeg"
-            },
-            {
-                "filename": "image2.png",
-                "original_name": "photo2.png",
-                "size": 2048,
-                "file_type": "image/png"
-            },
-            {
-                "filename": "image3.png",
-                "original_name": "photo3.png",
-                "size": 150,
-                "file_type": "image/png"
-            },
-            {
-                "filename": "image3.png",
-                "original_name": "photo3.png",
-                "size": 200,
-                "file_type": "image/jpeg"
-            },
-        ]
-        
-        for image in images:
-            image_id = self.repo.create(
-                filename=image["filename"],
-                original_name=image["original_name"],
-                size=image["size"],
-                file_type=image["file_type"]
-            )
-            logger.info(f"Added image with ID {image_id} to the database")
+        super().__init__(*args, **kwargs)
 
-
-    def handle_images(self): # /api/images
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-
-        images = self.repo.list()
         
-        self.wfile.write(json.dumps(images, cls=AppJSONEncoder).encode('utf-8'))
+    def handle_images(self):
+        params = get_query_params(self.path)
+        
+        
+        
+        images = self.repo.list(
+            page=int(params.get('page')) if params.get('page').isdigit() else 1,
+            limit=int(params.get('limit')) if params.get('limit').isdigit() else 10,
+            direction=params.get('direction', "desc"),
+        )
+        self._send_json(200, images)
 
-        self.rfile.read()
 
     def handle_upload(self):
-        ...
+        content_type = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in content_type:
+            self._send_error(400, "Expected multipart/form-data")
+            return
         
+        form = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={"REQUEST_METHOD": "POST"},
+        )
+        
+        if "file" not in form:
+            self._send_error(400, "No file provided")
+            return
+        
+        file_item = form["file"]
+        if not file_item.filename:
+            self._send_error(400, "No file provided")
+            return
+        
+        original_name: str = file_item.filename
+        data: bytes = file_item.file.read()
+        
+        if not validate_extension(original_name):
+            self._send_error(400, f"Invalid file type. Allowed: {settings.allowed_file_types}")
+            return
+            
+        if not validate_size(len(data)):
+            self._send_error(413, f"File too large. Max: {settings.max_file_size_mb} MB")
+            return
+            
+        ext = original_name.split(".")[-1].lower()
+        filename = f"{uuid.uuid4()}.{ext}"
+        
+        try:
+            save_image(filename, data)
+            
+            image_id = self.repo.create(
+                filename=filename,
+                original_name=original_name,
+                size=len(data),
+                file_type=ext
+            )
+        except Exception as e:
+            logger.error("Error creating or saving image", e)
+            delete_image(filename)
+        
+        self._send_json(201, {
+            "id": image_id,
+            "filename": filename,
+            "url": f"/images/{filename}"
+            }
+        )
         
     def delete_image(self):
-        ...
-
+        filename = self.path.split("/")[-1]
+        
+        # delete in DB
+        deleted = self.repo.delete_by_filename(filename)
+        if not deleted:
+            self._send_error(404, "Image not found")
+            return
+        
+        # delete in filesytem
+        if not delete_image(filename):
+            self._send_error(404, "Image not found")
+            return
+        
+        self._send_json(204, {})
+        
 
     def do_GET(self):
         logger.info(f"Received GET request for {self.path}")
-        self.path = self.path.rstrip("/")
-
-        if self.path == "/images":
+        
+        if "/images" in self.path:
             self.handle_images()
         
 
     def do_POST(self):
         logger.info(f"Received POST request for {self.path}")
         
-        if self.path == "/upload":
+        if "/upload" in self.path:
             self.handle_upload()
             
     
     def do_DELETE(self):
         logger.info(f"Received DELETE request for {self.path}")
+        
         if self.path.startswith("/images/"):
             self.delete_image()
             
     
 if __name__ == "__main__":
     server = HTTPServer(("0.0.0.0", 8000), ImageAPIServer)
+    # server.repo = ImageRepository()
     
     try:
         print("Сервер запущено...")

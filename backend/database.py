@@ -34,6 +34,7 @@ class ImageRepository:
             )
             image_id = cur.fetchone()[0]
             return image_id
+       
         
     def list(self, page: int = 1, limit: int = 10, direction: str = "desc") -> list[dict]:
         with self._cursor(dict_rows=True) as cur:
@@ -41,18 +42,42 @@ class ImageRepository:
             direction = "DESC" if direction.lower() == "desc" else "ASC"
             
             cur.execute(
-                """
+                f"""
                 SELECT id, filename, original_name, size, file_type, upload_time
                 FROM images
-                ORDER BY %s
+                ORDER BY upload_time {direction}
                 LIMIT %s OFFSET %s""",
-                (direction, limit, offset)
+                (limit, offset)
             )
             return cur.fetchall()
             
         
-    def get_by_id():
-        ...
-        
-    def delete_by_id():
-        ...
+    def get_by_id(self, image_id: int) -> dict | None:
+        with self._cursor(dict_rows=True) as cur:
+            cur.execute(
+                """
+                SELECT id, filename, original_name, size, file_type, upload_time
+                FROM images
+                WHERE id = %s
+                """,
+                (image_id,),
+            )
+            return cur.fetchone()
+
+
+    def delete_by_id(self, image_id: int) -> bool:
+        with self._cursor() as cur:
+            cur.execute(
+                "DELETE FROM images WHERE id = %s RETURNING id",
+                (image_id,),
+            )
+            return cur.fetchone() is not None
+
+
+    def delete_by_filename(self, filename: str) -> bool:
+        with self._cursor() as cur:
+            cur.execute(
+                "DELETE FROM images WHERE filename = %s RETURNING id",
+                (filename,),
+            )
+            return cur.fetchone() is not None

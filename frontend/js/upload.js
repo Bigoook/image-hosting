@@ -8,9 +8,9 @@
     /* --------------------------------------------------------------------
      *  CONSTANTS
      * ------------------------------------------------------------------ */
-    const API_UPLOAD_URL = `http://localhost:8000/api/upload/`;
-    const API_IMAGES_URL = `http://localhost:8000/api/images`;
-    const API_DELETE_URL = (fn) => `${location.origin}/api/images/${encodeURIComponent(fn)}`;
+    const API_UPLOAD_URL = `http://localhost:8000/upload/`;
+    const API_IMAGES_URL = `http://localhost:8000/images`;
+    const API_DELETE_URL = (fn) => `http://localhost:8000/images/${encodeURIComponent(fn)}`;
 
     const LS_KEYS = {
         LIMIT: 'image_host_limit',
