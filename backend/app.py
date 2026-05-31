@@ -25,15 +25,17 @@ class ImageAPIServer(BaseHandler):
         
     def handle_images(self):
         params = get_query_params(self.path)
-        
-        
-        
-        images = self.repo.list(
-            page=int(params.get('page')) if params.get('page').isdigit() else 1,
-            limit=int(params.get('limit')) if params.get('limit').isdigit() else 10,
-            direction=params.get('direction', "desc"),
-        )
-        self._send_json(200, images)
+        if len(params) > 0: #якщо є параметри то вважаємо що треба повернути список
+            images = self.repo.list(
+                page=int(params.get('page')) if params.get('page').isdigit() else 1,
+                limit=int(params.get('limit')) if params.get('limit').isdigit() else 10,
+                direction=params.get('direction', "desc"),
+            )
+            self._send_json(200, images)
+        else: #повертаємо один файл
+            filename = self.path.split("/")[-1]
+            images = self.repo.get_by_filename(filename)
+            self._send_json(200, images)
 
 
     def handle_upload(self):
