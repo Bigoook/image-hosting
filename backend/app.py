@@ -23,11 +23,10 @@ class ImageAPIServer(BaseHandler):
         super().__init__(*args, **kwargs)
 
         
-    def handle_images(self):
+    def get_images(self):
         params = get_query_params(self.path)
         
-        
-        
+        # FIXME - помилка якщо параметри не передані
         images = self.repo.list(
             page=int(params.get('page')) if params.get('page').isdigit() else 1,
             limit=int(params.get('limit')) if params.get('limit').isdigit() else 10,
@@ -36,7 +35,20 @@ class ImageAPIServer(BaseHandler):
         self._send_json(200, images)
 
 
-    def handle_upload(self):
+    def get_image(self):
+        filename = self.path.split("?")[0].split("/")[-1]
+        
+        image = self.repo.get_by_filename(filename)
+        
+        if image is None:
+            self._send_error(404, "Not Found")
+            return
+            
+        
+        self._send_json(200, image)
+
+
+    def create_image(self):
         content_type = self.headers.get("Content-Type", "")
         if "multipart/form-data" not in content_type:
             self._send_error(400, "Expected multipart/form-data")
@@ -90,6 +102,7 @@ class ImageAPIServer(BaseHandler):
             "url": f"/images/{filename}"
             }
         )
+    
         
     def delete_image(self):
         filename = self.path.split("/")[-1]
@@ -106,32 +119,41 @@ class ImageAPIServer(BaseHandler):
             return
         
         self._send_json(204, {})
+      
         
-
     def do_GET(self):
         logger.info(f"Received GET request for {self.path}")
         
-        if "/images" in self.path:
-            self.handle_images()
+        parts = self._path_parts()
+        
+        if parts[0] == "images":
+            if len(parts) >= 2:
+                self.get_image()
+            else:
+                self.get_images()
         
 
     def do_POST(self):
         logger.info(f"Received POST request for {self.path}")
         
-        if "/upload" in self.path:
-            self.handle_upload()
+        parts = self._path_parts()
+        
+        if parts[0] == "upload":
+            self.create_image()
             
     
     def do_DELETE(self):
         logger.info(f"Received DELETE request for {self.path}")
         
-        if self.path.startswith("/images/"):
+        parts = self._path_parts()
+
+        
+        if parts[0] == "images" and len(parts) >= 2:
             self.delete_image()
             
     
 if __name__ == "__main__":
     server = HTTPServer(("0.0.0.0", 8000), ImageAPIServer)
-    # server.repo = ImageRepository()
     
     try:
         print("Сервер запущено...")

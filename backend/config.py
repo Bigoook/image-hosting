@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     max_file_size_mb: int
     allowed_file_types: list[str]
     
+    api_prefix: str = "/api"
+    
     images_dir: str
     logs_dir: str
     

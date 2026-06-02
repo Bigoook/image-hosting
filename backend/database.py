@@ -65,6 +65,19 @@ class ImageRepository:
             return cur.fetchone()
 
 
+    def get_by_filename(self, filename: str) -> dict | None:
+            with self._cursor(dict_rows=True) as cur:
+                cur.execute(
+                    """
+                    SELECT id, filename, original_name, size, file_type, upload_time
+                    FROM images
+                    WHERE filename = %s
+                    """,
+                    (filename,),
+                )
+                return cur.fetchone()
+
+
     def delete_by_id(self, image_id: int) -> bool:
         with self._cursor() as cur:
             cur.execute(

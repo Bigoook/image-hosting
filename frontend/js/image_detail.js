@@ -9,8 +9,9 @@
     /* --------------------------------------------------------------------
      *  CONSTANTS
      * ------------------------------------------------------------------ */
-    const API_DELETE_URL = (fn) => `http://localhost:8000/images/${encodeURIComponent(fn)}`;
-    const API_DETAIL_URL = (fn) => `http://localhost:8000/images/${encodeURIComponent(fn)}`;
+    const API = window.APP_CONFIG.baseUrl;
+    const API_DELETE_URL = (fn) => `${API}/api/images/${encodeURIComponent(fn)}`;
+    const API_DETAIL_URL = (fn) => `${API}/api/images/${encodeURIComponent(fn)}`;
 
     const SEL = {
         loadingContainer: '#loadingContainer',
@@ -198,7 +199,7 @@
     const updateImageInfo = (imageData) => {
         console.log('[updateImageInfo] Updating UI with image data:', imageData);
 
-        const imageUrl = `${location.origin}${imageData.url || '/images/' + imageData.filename}`;
+        const imageUrl = `${API}${imageData.url || '/images/' + imageData.filename}`;
 
         $(SEL.imagePreview).src = imageUrl;
         $(SEL.imagePreview).alt = imageData.original_name || imageData.filename;
@@ -298,7 +299,7 @@
 
         console.log('[handleDownload] Starting download for:', currentImageData.filename);
 
-        const imageUrl = `${location.origin}${currentImageData.url || '/images/' + currentImageData.filename}`;
+        const imageUrl = `${API}${currentImageData.url || '/images/' + currentImageData.filename}`;
         const filename = currentImageData.original_name || currentImageData.filename;
 
         const link = document.createElement('a');
@@ -372,7 +373,7 @@
         if (copyUrlBtn) {
             copyUrlBtn.addEventListener('click', () => {
                 if (!currentImageData) return;
-                const imageUrl = `${location.origin}${currentImageData.url || '/images/' + currentImageData.filename}`;
+                const imageUrl = `${API}${currentImageData.url || '/images/' + currentImageData.filename}`;
                 copyToClipboard(imageUrl, copyUrlBtn, 'Copy URL');
             });
         }
