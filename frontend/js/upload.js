@@ -20,8 +20,8 @@
     };
 
     const DEFAULT_PAGE = 1;
-    const DEFAULT_LIMIT = 10;
-    const AVAILABLE_LIMITS = [10];
+    const DEFAULT_LIMIT = 8;
+    const AVAILABLE_LIMITS = [4, 8, 12];
     const DEFAULT_TAB = 'upload';
     const DEFAULT_SORT_ORDER = 'desc';
     const VALID_TABS = ['upload', 'images'];

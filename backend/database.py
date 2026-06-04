@@ -50,8 +50,14 @@ class ImageRepository:
                 (limit, offset)
             )
             return cur.fetchall()
-            
-        
+
+
+    def count(self) -> int:
+        with self._cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM images")
+            return cur.fetchone()[0]
+
+
     def get_by_id(self, image_id: int) -> dict | None:
         with self._cursor(dict_rows=True) as cur:
             cur.execute(

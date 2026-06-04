@@ -1,5 +1,6 @@
 import os
 import cgi
+import math
 import uuid
 from http.server import HTTPServer
 
@@ -25,14 +26,24 @@ class ImageAPIServer(BaseHandler):
         
     def get_images(self):
         params = get_query_params(self.path)
-        
-        # FIXME - помилка якщо параметри не передані
-        images = self.repo.list(
-            page=int(params.get('page')) if params.get('page').isdigit() else 1,
-            limit=int(params.get('limit')) if params.get('limit').isdigit() else 10,
-            direction=params.get('direction', "desc"),
-        )
-        self._send_json(200, images)
+
+        page = int(params['page']) if params.get('page', '').isdigit() else 1
+        limit = int(params['limit']) if params.get('limit', '').isdigit() else 10
+        order = params.get('order', "desc")
+
+        items = self.repo.list(page=page, limit=limit, direction=order)
+        total = self.repo.count()
+        pages = max(1, math.ceil(total / limit))
+
+        self._send_json(200, {
+            "items": items,
+            "pagination": {
+                "total": total,
+                "pages": pages,
+                "page": page,
+                "limit": limit,
+            },
+        })
 
 
     def get_image(self):
