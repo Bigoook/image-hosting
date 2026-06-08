@@ -1,5 +1,5 @@
 
-CREATE TABLE images (
+CREATE TABLE IF NOT EXISTS images (
     id SERIAL PRIMARY KEY,
     filename TEXT NOT NULL,
     original_name TEXT NOT NULL,

@@ -8,9 +8,10 @@
     /* --------------------------------------------------------------------
      *  CONSTANTS
      * ------------------------------------------------------------------ */
-    const API_UPLOAD_URL = `http://localhost:8000/upload/`;
-    const API_IMAGES_URL = `http://localhost:8000/images`;
-    const API_DELETE_URL = (fn) => `http://localhost:8000/images/${encodeURIComponent(fn)}`;
+    const API = window.APP_CONFIG.baseUrl;
+    const API_UPLOAD_URL = `${API}/api/upload/`;
+    const API_IMAGES_URL = `${API}/api/images`;
+    const API_DELETE_URL = (fn) => `${API}/api/images/${encodeURIComponent(fn)}`;
 
     const LS_KEYS = {
         LIMIT: 'image_host_limit',
@@ -19,8 +20,8 @@
     };
 
     const DEFAULT_PAGE = 1;
-    const DEFAULT_LIMIT = 10;
-    const AVAILABLE_LIMITS = [10];
+    const DEFAULT_LIMIT = 8;
+    const AVAILABLE_LIMITS = [4, 8, 12];
     const DEFAULT_TAB = 'upload';
     const DEFAULT_SORT_ORDER = 'desc';
     const VALID_TABS = ['upload', 'images'];
@@ -445,7 +446,7 @@
                 });
                 console.log('[uploadFile] Upload successful:', data);
                 showStatus(uploadText, `File uploaded: ${data.filename}`);
-                resultInput.value = `${location.origin}${data.url}`;
+                resultInput.value = `${API}${data.url}`;
             } catch (e) {
                 console.error('[uploadFile] Upload failed:', e);
                 showStatus(uploadText, `Upload failed: ${e.message}`, true);
@@ -609,7 +610,7 @@
          */
         const createImageCard = (image) => {
             const filename = image.filename;
-            const imageUrl = `${location.origin}${image.url || '/images/' + filename}`;
+            const imageUrl = `${API}${image.url || '/images/' + filename}`;
             const detailUrl = `image_detail.html?filename=${encodeURIComponent(filename)}`;
 
             console.log('[createImageCard] Creating card for:', filename);
