@@ -13,7 +13,7 @@ class BaseHandler(BaseHTTPRequestHandler):
         self.end_headers()
         
         self.wfile.write(json.dumps(data, cls=AppJSONEncoder).encode('utf-8'))
-        
+
     def _send_error(self, status_code: int, message: str):
         self._send_json(status_code, {"error": message})
         

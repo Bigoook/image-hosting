@@ -71,19 +71,6 @@ class ImageRepository:
             return cur.fetchone()
 
     def get_by_filename(self, filename: str) -> dict | None:
-        with self._cursor(dict_rows=True) as cur:
-            cur.execute(
-                """
-                SELECT id, filename, original_name, size, file_type, upload_time
-                FROM images
-                WHERE filename = %s
-                """,
-                (filename,),
-            )
-            return cur.fetchone()
-
-
-    def get_by_filename(self, filename: str) -> dict | None:
             with self._cursor(dict_rows=True) as cur:
                 cur.execute(
                     """
@@ -112,3 +99,34 @@ class ImageRepository:
                 (filename,),
             )
             return cur.fetchone() is not None
+
+    def get_stats(self):
+        with self._cursor(dict_rows=True) as cur:
+            cur.execute("""
+                SELECT file_type, COUNT(*) AS count, SUM(size) AS size
+                FROM images
+                GROUP BY file_type
+            """)
+            rows = cur.fetchall()
+
+            cur.execute("SELECT COUNT(*) AS total_files, SUM(size) AS total_size FROM images")
+            totals = cur.fetchone()
+
+            return {
+                "total_files": totals["total_files"],
+                "total_size": totals["total_size"],
+                "by_type": {row["file_type"]: {"count": row["count"], "size": row["size"]} for row in rows}
+            }
+
+    def get_image_stats(self, filename: str):
+        with self._cursor(dict_rows=True) as cur:
+            cur.execute("""
+                SELECT filename, views, upload_time, size, file_type
+                FROM images
+                WHERE filename = %s
+            """, (filename,))
+            return cur.fetchone()
+
+    def increment_views(self, filename: str):
+        with self._cursor() as cur:
+            cur.execute("UPDATE images SET views = views + 1 WHERE filename = %s", (filename,))

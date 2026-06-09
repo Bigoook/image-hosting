@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS images (
     original_name TEXT NOT NULL,
     size INTEGER NOT NULL,
     upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    file_type TEXT NOT NULL
+    file_type TEXT NOT NULL,
+    views INT DEFAULT 0
 );

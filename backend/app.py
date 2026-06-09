@@ -55,8 +55,8 @@ class ImageAPIServer(BaseHandler):
             logger.error(f"Image '{filename}' not found")
             self._send_error(404, "Not Found")
             return
-            
-        
+
+        self.repo.increment_views(filename)
         self._send_json(200, image)
 
 
@@ -137,12 +137,30 @@ class ImageAPIServer(BaseHandler):
         logger.info(f"Received GET request for {self.path}")
         
         parts = self._path_parts()
-        
-        if parts[0] == "images":
-            if len(parts) >= 2:
+
+        if parts and parts[0] == "stats":
+            stats = self.repo.get_stats()
+            self._send_json(200, stats)
+
+        elif parts and parts[0] == "images":
+            if len(parts) >= 3 and parts[2] == "stats":
+                filename = parts[1]
+                stats = self.repo.get_image_stats(filename)
+                if stats:
+                    self._send_json(200, stats)
+                else:
+                    self._send_json(404, {
+                        "error": "notfound",
+                        "message": f"Path '{self.path}' not recognized"})
+            elif len(parts) >= 2:
                 self.get_image()
             else:
                 self.get_images()
+        else:
+            self._send_json(404, {
+                "error": "notfound",
+                "message": f"Path '{self.path}' not recognized"
+            })
         
 
     def do_POST(self):
